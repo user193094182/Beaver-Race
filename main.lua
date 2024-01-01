@@ -12,7 +12,7 @@ function love.load()
 
     numBeavers = 0
     minBeavers = 1
-    maxBeavers = 10
+    maxBeavers = 100
 
     raceTime = nil
     minTime = 1
@@ -73,6 +73,7 @@ function love.draw()
     for i=1,#beavers do
         local beaver = beavers[i]
         beaver.animations.right:draw(beaver.spriteSheet, beaver.x, beaver.y, nil, beaver.scale, nil, 200, 32)
+        love.graphics.print(beaver.name, beaver.x-325, beaver.y+20)
     end
     cam:detach()
 
@@ -89,13 +90,14 @@ function love.textinput(t)
     suit.textinput(t)
 end
 
-function newBeaver(y)
+function newBeaver(y, name)
     local beaver = {}
     beaver.y = y
     beaver.x = 500
     beaver.scale = 2
     beaver.scale = 2
     beaver.speed = 1
+    beaver.name = name
     beaver.spriteSheet = love.graphics.newImage('sprites/beaver-NESW-rgb.png')
     beaver.grid = anim8.newGrid(64, 64, beaver.spriteSheet:getWidth(), beaver.spriteSheet:getHeight())
     beaver.animations = {}
@@ -105,9 +107,9 @@ function newBeaver(y)
 end
 
 function initBeavers(numBeavers)
-    newBeaver(20)
+    newBeaver(20, 1)
     for i=1,numBeavers-1 do
-        newBeaver(beavers[#beavers].y + beaverSpacing)
+        newBeaver(beavers[#beavers].y + beaverSpacing, tostring(i+1))
     end
     beaverInit = true
 end
