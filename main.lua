@@ -7,6 +7,7 @@ function love.load()
     love.graphics.setDefaultFilter("nearest", "nearest")
     math.randomseed(os.time())
 
+
     beavers = {}
     beaverInit = false
 
@@ -14,7 +15,7 @@ function love.load()
     minBeavers = 1
     maxBeavers = 100
 
-    raceTime = nil
+    raceLength = nil
     minTime = 1
     maxTime = 300
 
@@ -34,11 +35,11 @@ function love.load()
     inputBeavers.error = ""
     inputBeavers.set = false
 
-    inputTime = {}
-    inputTime.text = ""
-    inputTime.visible = true
-    inputTime.error = ""
-    inputTime.set = false
+    inputLength = {}
+    inputLength.text = ""
+    inputLength.visible = true
+    inputLength.error = ""
+    inputLength.set = false
 
     showUI = true
     start = false
@@ -46,11 +47,20 @@ function love.load()
 
     screenHeight = love.graphics.getHeight()
     screenWidth = love.graphics.getWidth()
+
+    background = {}
+    background.spriteSheet = love.graphics.newImage('sprites/Ocean_SpriteSheet.png')
+    background.grid = anim8.newGrid(32,32, background.spriteSheet:getWidth(), background.spriteSheet:getHeight())
+    background.animations = {}
+    background.animations.anim = anim8.newAnimation(background.grid('1-8',2),0.2)
 end
 
 function love.update(dt)
-
+    time = love.timer.getTime()
     --TODO: implement countdown timer
+    -- or instead of a countdown timer, set the distance instead, put the finish line at that distance, 
+    -- once a bever reaches that distance, race ends, theypre the winner
+
     if showUI then
         renderUI()
     end
@@ -64,10 +74,16 @@ function love.update(dt)
         end
         beaver.animations.right:update(dt)
     end
+    background.animations.anim:update(dt)
 end
 
 function love.draw()
-    --TODO: add background
+
+    for i = 0, screenWidth/64 do
+        for j = 0, screenHeight/64 do
+            background.animations.anim:draw(background.spriteSheet,i*64,j*64, nil, 2)
+        end
+    end
 
     cam:attach()
     for i=1,#beavers do
@@ -77,7 +93,7 @@ function love.draw()
     end
     cam:detach()
 
-    if inputBeavers.visible or inputTime.visible then
+    if inputBeavers.visible or inputLength.visible then
         suit.draw()
     end
 end
@@ -106,6 +122,8 @@ function newBeaver(y, name)
     table.insert(beavers,beaver)
 end
 
+
+
 function initBeavers(numBeavers)
     newBeaver(20, 1)
     for i=1,numBeavers-1 do
@@ -124,9 +142,9 @@ function renderUI()
     state = suit.Input(inputBeavers, 10,25,200,30)
     suit.Label(inputBeavers.error, {align="left"}, 10,50,200,30) 
 
-    suit.Label("Time:", {align="left"}, 10, 100, 200, 30)
-    state = suit.Input(inputTime, 10, 125, 200, 30)
-    suit.Label(inputTime.error, {align="left"}, 10,150,200,30) 
+    suit.Label("Race Length:", {align="left"}, 10, 100, 200, 30)
+    state = suit.Input(inputLength, 10, 125, 200, 30)
+    suit.Label(inputLength.error, {align="left"}, 10,150,200,30) 
 
     if suit.Button("Start", 10, 200, 200, 30).hit then
         numBeavers = tonumber(inputBeavers.text)
@@ -139,19 +157,20 @@ function renderUI()
             inputBeavers.set = true
         end
 
-        raceTime = tonumber(inputTime.text)
-        if raceTime == nil or raceTime > maxTime or raceTime < minTime then
-            inputTime.error = "race time must be between " .. minTime .. " and " .. maxTime .. " seconds"
-            inputTime.set = false
+        raceLength = tonumber(inputLength.text)
+        if raceLength == nil or raceLength > maxTime or raceLength < minTime then
+            inputLength.error = "race time must be between " .. minTime .. " and " .. maxTime .. " seconds"
+            inputLength.set = false
         else
-            inputTime.set = true
+            inputLength.set = true
         end
 
-        if inputTime.set and inputBeavers.set then
+        if inputLength.set and inputBeavers.set then
             showUI = false
             start = true
             startError = ""
             --TODO: add horn sound effect for race start
+            startTime = love.timer.getTime()
         else
             startError = "enter number of beavers and race time"
         end
