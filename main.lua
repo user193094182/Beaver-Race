@@ -9,13 +9,14 @@ function love.load()
 
 
     beavers = {}
+    winner = nil
     beaverInit = false
 
     numBeavers = 0
     minBeavers = 1
     maxBeavers = 100
 
-    raceLength = nil
+    raceLength = 0
     minTime = 1
     maxTime = 300
 
@@ -35,11 +36,11 @@ function love.load()
     inputBeavers.error = ""
     inputBeavers.set = false
 
-    inputLength = {}
-    inputLength.text = ""
-    inputLength.visible = true
-    inputLength.error = ""
-    inputLength.set = false
+    inputTime = {}
+    inputTime.text = ""
+    inputTime.visible = true
+    inputTime.error = ""
+    inputTime.set = false
 
     showUI = true
     start = false
@@ -53,10 +54,14 @@ function love.load()
     background.grid = anim8.newGrid(32,32, background.spriteSheet:getWidth(), background.spriteSheet:getHeight())
     background.animations = {}
     background.animations.anim = anim8.newAnimation(background.grid('1-8',2),0.2)
+
+    time = {}
+    time.start = 0
+    time.stop = 0
+    
 end
 
 function love.update(dt)
-    time = love.timer.getTime()
     --TODO: implement countdown timer
     -- or instead of a countdown timer, set the distance instead, put the finish line at that distance, 
     -- once a bever reaches that distance, race ends, theypre the winner
@@ -65,14 +70,21 @@ function love.update(dt)
         renderUI()
     end
 
-    max = -1
-    for i,beaver in ipairs(beavers) do
-        beaver.x = beaver.x + love.math.random(.01, .09)*5
-        if beaver.x > max then
-            max = beaver.x
-            cam:lookAt(beaver.x -200, screenHeight/2)
+    if raceStart and love.timer.getTime() < time.stop then
+        max = -1
+        for i,beaver in ipairs(beavers) do
+            beaver.x = beaver.x + love.math.random(.01, .09)*5
+            if beaver.x > max then
+                winner = beaver
+                max = beaver.x
+                cam:lookAt(beaver.x -200, screenHeight/2)
+            end
+            beaver.animations.right:update(dt)
         end
-        beaver.animations.right:update(dt)
+    elseif raceStart and love.timer.getTime() >= time.stop then
+        cam:lookAt(winner.x -200, screenHeight/2)
+        winner.animations.right:update(dt)
+        winner.x = winner.x + 0.5
     end
     background.animations.anim:update(dt)
 end
@@ -93,8 +105,13 @@ function love.draw()
     end
     cam:detach()
 
-    if inputBeavers.visible or inputLength.visible then
+    if inputBeavers.visible or inputTime.visible then
         suit.draw()
+    end
+
+    if raceStart and love.timer.getTime() >= time.stop then
+        love.graphics.print("Number " .. winner.name .. "is the winner!", screenHeight/2, screenWidth/2)
+        --TODO: add play again/reset button here
     end
 end
 
@@ -126,6 +143,7 @@ end
 
 function initBeavers(numBeavers)
     newBeaver(20, 1)
+    winner = beavers[1]
     for i=1,numBeavers-1 do
         newBeaver(beavers[#beavers].y + beaverSpacing, tostring(i+1))
     end
@@ -143,8 +161,8 @@ function renderUI()
     suit.Label(inputBeavers.error, {align="left"}, 10,50,200,30) 
 
     suit.Label("Race Length:", {align="left"}, 10, 100, 200, 30)
-    state = suit.Input(inputLength, 10, 125, 200, 30)
-    suit.Label(inputLength.error, {align="left"}, 10,150,200,30) 
+    state = suit.Input(inputTime, 10, 125, 200, 30)
+    suit.Label(inputTime.error, {align="left"}, 10,150,200,30) 
 
     if suit.Button("Start", 10, 200, 200, 30).hit then
         numBeavers = tonumber(inputBeavers.text)
@@ -157,20 +175,22 @@ function renderUI()
             inputBeavers.set = true
         end
 
-        raceLength = tonumber(inputLength.text)
+        raceLength = tonumber(inputTime.text)
         if raceLength == nil or raceLength > maxTime or raceLength < minTime then
-            inputLength.error = "race time must be between " .. minTime .. " and " .. maxTime .. " seconds"
-            inputLength.set = false
+            inputTime.error = "race time must be between " .. minTime .. " and " .. maxTime .. " seconds"
+            inputTime.set = false
         else
-            inputLength.set = true
+            inputTime.set = true
         end
 
-        if inputLength.set and inputBeavers.set then
+        if inputTime.set and inputBeavers.set then
+            --TODO: add horn sound effect for race start
             showUI = false
             start = true
             startError = ""
-            --TODO: add horn sound effect for race start
-            startTime = love.timer.getTime()
+            time.start = love.timer.getTime()
+            time.stop = time.start + raceLength
+            raceStart = true
         else
             startError = "enter number of beavers and race time"
         end
