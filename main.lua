@@ -1,13 +1,16 @@
---TODO: somehow fix the choppy beaver movement
+anim8 = require 'lib/anim8'
+camera = require 'lib/camera'
+suit = require 'lib/suit'
+
 function love.load()
     colorBlack	=	{normal = {bg = {71,134,206}, fg = {0,0,0}}}
-    anim8 = require 'lib/anim8'
-    camera = require 'lib/camera'
-    suit = require 'lib/suit'
+    colorRed	=	{normal = {bg = {71,134,206}, fg = {255,0,0}}}
 
     love.graphics.setDefaultFilter("nearest", "nearest")
     math.randomseed(os.time())
 
+    --font sizes
+    sm = love.graphics.newFont(12)
     med = love.graphics.newFont(18)
     lg = love.graphics.newFont(36)
 
@@ -25,6 +28,7 @@ function love.load()
 
     beaverSpacing = 0
     raceStart = false
+    raceEnd = false
 
     cam = camera()
 
@@ -45,12 +49,15 @@ function love.load()
     inputTime.error = ""
     inputTime.set = false
 
+    screenHeight = love.graphics.getHeight()
+    screenWidth = love.graphics.getWidth()
+
     showUI = true
     start = false
     startError = ""
-
-    screenHeight = love.graphics.getHeight()
-    screenWidth = love.graphics.getWidth()
+    uiWidth = 200
+    uiX = screenWidth/2 - uiWidth/2
+    uiY = 0
 
     background = {}
     background.spriteSheet = love.graphics.newImage('sprites/Ocean_SpriteSheet.png')
@@ -85,7 +92,9 @@ function love.update(dt)
             beaver.animations.right:update(dt)
         end
     elseif raceStart and love.timer.getTime() >= time.stop then
+        raceEnd = true
         cam:lookAt(winner.x -200, screenHeight/2)
+
         winner.animations.right:update(dt)
         winner.x = winner.x + 0.5
     end
@@ -93,9 +102,9 @@ function love.update(dt)
 end
 
 function love.draw()
-    --TODO: draw timer on screen, (current time - start time)
     love.graphics.setFont(med)
 
+    --drawing background
     for i = 0, screenWidth/64 do
         for j = 0, screenHeight/64 do
             background.animations.anim:draw(background.spriteSheet,i*64,j*64, nil, 2)
@@ -111,12 +120,10 @@ function love.draw()
     end
     cam:detach()
 
-    -- if inputBeavers.visible or inputTime.visible then
     if showUI then
-        --TODO: make a background for the ui, just change size, color of rectangle below
-        -- love.graphics.setColor(255,0,0,100)
-        -- love.graphics.rectangle("fill", 100,100,200,200)
-        -- love.graphics.setColor(255,255,255,255)
+        love.graphics.setColor(0,0,0,50)
+        love.graphics.rectangle("fill", 0, 0, screenWidth, screenHeight);
+        love.graphics.setColor(255,255,255,255)
 
         suit.draw()
     end
@@ -128,6 +135,9 @@ function love.draw()
         love.graphics.setColor(255, 255, 255, 255)
         --TODO: add play again/reset button here
     end
+    --TODO: draw timer on screen, (current time - start time)
+        -- love.graphics.print(tostring(love.timer.getTime() - time.start), screenWidth/2, 10)
+
 end
 
 function love.keypressed(key)
@@ -154,8 +164,6 @@ function newBeaver(y, name)
     table.insert(beavers,beaver)
 end
 
-
-
 function initBeavers(numBeavers)
     newBeaver(20, 1)
     winner = beavers[1]
@@ -169,17 +177,18 @@ end
 
 --TODO: rename renderUI to something else
 function renderUI()
-    local state
 
-    -- suit.Label("Number of Beavers:", {align="left", color = colorBlack}, 10,0,200,30) 
-    suit.Label("Number of Beavers:", {align="left"}, 10,0,200,30) 
-    state = suit.Input(inputBeavers, 10,25,200,30)
-    suit.Label(inputBeavers.error, {align="left"}, 10,50,200,30) 
+    -- Input Boxes
+    suit.Label("Number of Beavers:", {align="left"}, uiX, uiY, uiWidth,30) 
+    suit.Input(inputBeavers, uiX,25,uiWidth,30)
+    suit.Label(inputBeavers.error, {align="left", color = colorRed}, uiX,50,uiWidth,30) 
 
-    suit.Label("Race Length:", {align="left"}, 10, 100, 200, 30)
-    etate = suit.Input(inputTime, 10, 125, 200, 30)
-    suit.Label(inputTime.error, {align="left"}, 10,150,200,30) 
-    if suit.Button("Start", 10, 200, 200, 30).hit then
+    suit.Label("Race Length:", {align="left"}, uiX, 125, uiWidth, 30)
+    suit.Input(inputTime, uiX, 150, uiWidth, 30)
+    suit.Label(inputTime.error, {align="left", color = colorRed}, uiX,175,uiWidth,30) 
+
+    -- Start Button
+    if suit.Button("Start", uiX, 275, uiWidth, 30).hit then
         numBeavers = tonumber(inputBeavers.text)
         if numBeavers == nil or numBeavers > maxBeavers or numBeavers < minBeavers then
             inputBeavers.error = "number of beavers must be beween " .. minBeavers .. " and " .. maxBeavers
@@ -187,9 +196,8 @@ function renderUI()
         else
             --TODO: fix beavers falling off bottom of screen
             --TODO: fix bug where you can spawn too many beavers, check if time is set also befoe callling initBEavers
-            beaverSpacing = (screenHeight) / numBeavers
-            initBeavers(numBeavers)
             inputBeavers.set = true
+            inputBeavers.error = ""
         end
 
         raceLength = tonumber(inputTime.text)
@@ -198,6 +206,7 @@ function renderUI()
             inputTime.set = false
         else
             inputTime.set = true
+            inputTime.error = ""
         end
 
         if inputTime.set and inputBeavers.set then
@@ -208,10 +217,13 @@ function renderUI()
             time.start = love.timer.getTime()
             time.stop = time.start + raceLength
             raceStart = true
+
+            beaverSpacing = (screenHeight) / numBeavers
+            initBeavers(numBeavers)
         else
             startError = "enter number of beavers and race time"
         end
 
     end
-    suit.Label(startError, 10, 225, 200, 30)
+    suit.Label(startError, {align = "left", color = colorRed}, uiX, 300, uiWidth, 30)
 end
