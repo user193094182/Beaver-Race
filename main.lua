@@ -11,7 +11,7 @@ function love.load()
 
     --font sizes
     sm = love.graphics.newFont(12)
-    med = love.graphics.newFont(18)
+    md = love.graphics.newFont(18)
     lg = love.graphics.newFont(36)
 
     beavers = {}
@@ -28,10 +28,10 @@ function love.load()
 
     beaverSpacing = 0
     raceStart = false
-    raceEnd = false
 
     cam = camera()
 
+    -- audio
     sounds = {}
     sounds.river = love.audio.newSource("audio/stream1.ogg", "static")
     sounds.river:setLooping(true)
@@ -52,7 +52,9 @@ function love.load()
     screenHeight = love.graphics.getHeight()
     screenWidth = love.graphics.getWidth()
 
+    -- UI stuff
     showUI = true
+    showStartMenu = true
     start = false
     startError = ""
     uiWidth = 200
@@ -76,9 +78,13 @@ end
 
 function love.update(dt)
 
-    if showUI then
-        renderUI()
+    if showStartMenu then
+        startMenu()
     end
+    if showResetButton then
+        resetButton()
+    end
+    -- TODO:: add a quit game button
 
     if raceStart and love.timer.getTime() < time.stop then
         max = -1
@@ -92,9 +98,7 @@ function love.update(dt)
             beaver.animations.right:update(dt)
         end
     elseif raceStart and love.timer.getTime() >= time.stop then
-        raceEnd = true
         cam:lookAt(winner.x -200, screenHeight/2)
-
         winner.animations.right:update(dt)
         winner.x = winner.x + 0.5
     end
@@ -102,7 +106,7 @@ function love.update(dt)
 end
 
 function love.draw()
-    love.graphics.setFont(med)
+    love.graphics.setFont(md)
 
     --drawing background
     for i = 0, screenWidth/64 do
@@ -111,7 +115,6 @@ function love.draw()
         end
     end
 
-    --TODO: check if race has started before drawing beavers, bug right now if you hit start but have not set time
     cam:attach()
     for i=1,#beavers do
         local beaver = beavers[i]
@@ -120,24 +123,31 @@ function love.draw()
     end
     cam:detach()
 
-    if showUI then
+    -- Draw start menu on black background
+    if showStartMenu then
         love.graphics.setColor(0,0,0,50)
         love.graphics.rectangle("fill", 0, 0, screenWidth, screenHeight);
         love.graphics.setColor(255,255,255,255)
-
+        suit.draw()
+    end
+    if showResetButton then
         suit.draw()
     end
 
+    -- When race is over
     if raceStart and love.timer.getTime() >= time.stop then
         love.graphics.setColor(255,255,0,255)
         love.graphics.setFont(lg)
-        love.graphics.print("Number " .. winner.name .. "is the winner!", screenHeight/2, screenWidth/2)
+        love.graphics.print("Number " .. winner.name .. " is the winner!", screenWidth/2, 10)
+
+
         love.graphics.setColor(255, 255, 255, 255)
-        --TODO: add play again/reset button here
+        love.graphics.setFont(md)
+        showResetButton = true
     end
+
     --TODO: draw timer on screen, (current time - start time)
         -- love.graphics.print(tostring(love.timer.getTime() - time.start), screenWidth/2, 10)
-
 end
 
 function love.keypressed(key)
@@ -165,7 +175,7 @@ function newBeaver(y, name)
 end
 
 function initBeavers(numBeavers)
-    newBeaver(20, 1)
+    newBeaver(50, 1)
     winner = beavers[1]
     for i=1,numBeavers-1 do
         newBeaver(beavers[#beavers].y + beaverSpacing, tostring(i+1))
@@ -174,10 +184,13 @@ function initBeavers(numBeavers)
 end
 
 --TODO: need some kind of beaver destructor that clears the beaver list thing table whatever
+function clearBeavers()
+    for i in pairs(beavers) do
+        beavers[i] = nil
+    end
+end
 
---TODO: rename renderUI to something else
-function renderUI()
-
+function startMenu()
     -- Input Boxes
     suit.Label("Number of Beavers:", {align="center"}, uiX, uiY, uiWidth,30) 
     suit.Input(inputBeavers, uiX,uiY +25,uiWidth,30)
@@ -194,8 +207,6 @@ function renderUI()
             inputBeavers.error = "number of beavers must be beween " .. minBeavers .. " and " .. maxBeavers
             inputBeavers.set = false
         else
-            --TODO: fix beavers falling off bottom of screen
-            --TODO: fix bug where you can spawn too many beavers, check if time is set also befoe callling initBEavers
             inputBeavers.set = true
             inputBeavers.error = ""
         end
@@ -211,14 +222,14 @@ function renderUI()
 
         if inputTime.set and inputBeavers.set then
             --TODO: add horn sound effect for race start
-            showUI = false
-            start = true
+            showStartMenu = false
             startError = ""
             time.start = love.timer.getTime()
             time.stop = time.start + raceLength
             raceStart = true
 
-            beaverSpacing = (screenHeight) / numBeavers
+            --TODO: fix beaver spacing
+            beaverSpacing = (screenHeight-120) / numBeavers
             initBeavers(numBeavers)
         else
             startError = "enter number of beavers and race time"
@@ -226,4 +237,13 @@ function renderUI()
 
     end
     suit.Label(startError, {align = "center", color = colorRed}, uiX, uiY+300, uiWidth, 30)
+end
+
+function resetButton()
+    if suit.Button("Race Again", uiX, screenHeight/2, uiWidth, 30).hit then
+        clearBeavers()
+        raceStart = false
+        showStartMenu = true
+        showResetButton = false
+    end
 end
