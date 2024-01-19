@@ -57,7 +57,7 @@ function love.load()
     startError = ""
     uiWidth = 200
     uiX = screenWidth/2 - uiWidth/2
-    uiY = 0
+    uiY = 100
 
     background = {}
     background.spriteSheet = love.graphics.newImage('sprites/Ocean_SpriteSheet.png')
@@ -179,16 +179,16 @@ end
 function renderUI()
 
     -- Input Boxes
-    suit.Label("Number of Beavers:", {align="left"}, uiX, uiY, uiWidth,30) 
-    suit.Input(inputBeavers, uiX,25,uiWidth,30)
-    suit.Label(inputBeavers.error, {align="left", color = colorRed}, uiX,50,uiWidth,30) 
+    suit.Label("Number of Beavers:", {align="center"}, uiX, uiY, uiWidth,30) 
+    suit.Input(inputBeavers, uiX,uiY +25,uiWidth,30)
+    suit.Label(inputBeavers.error, {align="center", color = colorRed}, uiX, uiY+50,uiWidth,30) 
 
-    suit.Label("Race Length:", {align="left"}, uiX, 125, uiWidth, 30)
-    suit.Input(inputTime, uiX, 150, uiWidth, 30)
-    suit.Label(inputTime.error, {align="left", color = colorRed}, uiX,175,uiWidth,30) 
+    suit.Label("Race Length:", {align="center"}, uiX, uiY+125, uiWidth, 30)
+    suit.Input(inputTime, uiX, uiY+150, uiWidth, 30)
+    suit.Label(inputTime.error, {align="center", color = colorRed}, uiX, uiY+175,uiWidth,30) 
 
     -- Start Button
-    if suit.Button("Start", uiX, 275, uiWidth, 30).hit then
+    if suit.Button("Start", uiX, uiY+275, uiWidth, 30).hit then
         numBeavers = tonumber(inputBeavers.text)
         if numBeavers == nil or numBeavers > maxBeavers or numBeavers < minBeavers then
             inputBeavers.error = "number of beavers must be beween " .. minBeavers .. " and " .. maxBeavers
@@ -225,5 +225,5 @@ function renderUI()
         end
 
     end
-    suit.Label(startError, {align = "left", color = colorRed}, uiX, 300, uiWidth, 30)
+    suit.Label(startError, {align = "center", color = colorRed}, uiX, uiY+300, uiWidth, 30)
 end
