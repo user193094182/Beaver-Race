@@ -43,6 +43,8 @@ function love.load()
     inputBeavers.error = ""
     inputBeavers.set = false
 
+    sorted = false
+
     inputTime = {}
     inputTime.text = ""
     inputTime.visible = true
@@ -98,9 +100,14 @@ function love.update(dt)
             beaver.animations.right:update(dt)
         end
     elseif raceStart and love.timer.getTime() >= time.stop then
+        --TODO: sort beavers by x position
+        if not sorted then
+            table.sort(beavers,sortBeavers)
+            sorted = true
+        end
         cam:lookAt(winner.x -200, screenHeight/2)
         winner.animations.right:update(dt)
-        winner.x = winner.x + 0.5
+        -- winner.x = winner.x + 0.5
     end
     background.animations.anim:update(dt)
 end
@@ -139,10 +146,19 @@ function love.draw()
         love.graphics.setColor(255,255,0,255)
         love.graphics.setFont(lg)
         love.graphics.print("Number " .. winner.name .. " is the winner!", screenWidth/2, 10)
-
-
         love.graphics.setColor(255, 255, 255, 255)
         love.graphics.setFont(md)
+
+        -- Print results
+        --TODO: move this to its own function
+        love.graphics.print("Results", 10,0)
+        local y = 15
+        for i in pairs(beavers) do
+            love.graphics.setFont(md)
+            love.graphics.print(beavers[i].name, 10, y)
+            y = y + 20
+        end
+
         showResetButton = true
     end
 
@@ -183,7 +199,6 @@ function initBeavers(numBeavers)
     beaverInit = true
 end
 
---TODO: need some kind of beaver destructor that clears the beaver list thing table whatever
 function clearBeavers()
     for i in pairs(beavers) do
         beavers[i] = nil
@@ -228,7 +243,6 @@ function startMenu()
             time.stop = time.start + raceLength
             raceStart = true
 
-            --TODO: fix beaver spacing
             beaverSpacing = (screenHeight-120) / numBeavers
             initBeavers(numBeavers)
         else
@@ -240,10 +254,15 @@ function startMenu()
 end
 
 function resetButton()
-    if suit.Button("Race Again", uiX, screenHeight/2, uiWidth, 30).hit then
+    if suit.Button("Race Again", uiX, screenHeight-50, uiWidth, 30).hit then
         clearBeavers()
+        sorted = false
         raceStart = false
         showStartMenu = true
         showResetButton = false
     end
+end
+
+function sortBeavers(beaver1, beaver2)
+    return beaver1.x > beaver2.x
 end
