@@ -1,6 +1,7 @@
 anim8 = require 'lib/anim8'
 camera = require 'lib/camera'
 suit = require 'lib/suit'
+love.window.setTitle("Beaver Race")
 
 function love.load()
     colorBlack	=	{normal = {bg = {71,134,206}, fg = {0,0,0}}}
@@ -55,8 +56,10 @@ function love.load()
     screenWidth = love.graphics.getWidth()
 
     -- UI stuff
-    showUI = true
     showStartMenu = true
+    showResetButton = false
+    showResults = false
+
     start = false
     startError = ""
     uiWidth = 200
@@ -72,13 +75,14 @@ function love.load()
     time = {}
     time.start = 0
     time.stop = 0
-
-    -- suit.theme.color.normal = {bg = {255, 255, 255}, fg = {255, 255, 255}}
-    -- suit.theme.color.hovered = {bg = {0, 0, 0}, fg = {255, 255, 255}}
-    -- suit.theme.color.active = {bg = {0, 0, 0}, fg = {255, 255, 255}} 
 end
 
 function love.update(dt)
+
+    --screen dimension stuff
+    screenHeight = love.graphics.getHeight()
+    screenWidth = love.graphics.getWidth()
+    uiX = screenWidth/2 - uiWidth/2
 
     if showStartMenu then
         startMenu()
@@ -90,8 +94,10 @@ function love.update(dt)
 
     if raceStart and love.timer.getTime() < time.stop then
         max = -1
-        for i,beaver in ipairs(beavers) do
-            beaver.x = beaver.x + love.math.random(.01, .09)*5
+        for i,beaver in pairs(beavers) do
+			-- Equation for random beaver movement
+            beaver.x = beaver.x + love.math.random(.01, .09)*love.math.random(1,5)
+
             if beaver.x > max then
                 winner = beaver
                 max = beaver.x
@@ -100,14 +106,13 @@ function love.update(dt)
             beaver.animations.right:update(dt)
         end
     elseif raceStart and love.timer.getTime() >= time.stop then
-        --TODO: sort beavers by x position
         if not sorted then
             table.sort(beavers,sortBeavers)
             sorted = true
         end
+        showResults = true
         cam:lookAt(winner.x -200, screenHeight/2)
         winner.animations.right:update(dt)
-        -- winner.x = winner.x + 0.5
     end
     background.animations.anim:update(dt)
 end
@@ -145,25 +150,31 @@ function love.draw()
     if raceStart and love.timer.getTime() >= time.stop then
         love.graphics.setColor(255,255,0,255)
         love.graphics.setFont(lg)
-        love.graphics.print("Number " .. winner.name .. " is the winner!", screenWidth/2, 10)
+
+		local font = love.graphics.getFont()
+		local text = "Number " .. winner.name .. " wins!"
+
+        love.graphics.print(text, screenWidth/2 - font:getWidth(text)/2, 10)
         love.graphics.setColor(255, 255, 255, 255)
         love.graphics.setFont(md)
 
         -- Print results
-        --TODO: move this to its own function
-        love.graphics.print("Results", 10,0)
-        local y = 15
-        for i in pairs(beavers) do
-            love.graphics.setFont(md)
-            love.graphics.print(beavers[i].name, 10, y)
-            y = y + 20
-        end
-
+        results()
+        love.graphics.setColor(255,255,255,255)
+        
         showResetButton = true
     end
 
-    --TODO: draw timer on screen, (current time - start time)
-        -- love.graphics.print(tostring(love.timer.getTime() - time.start), screenWidth/2, 10)
+    -- Draw timer 
+    if raceStart and love.timer.getTime() < time.stop then 
+		local t = tostring(math.floor(time.stop - love.timer.getTime()))
+        love.graphics.setFont(lg)
+		local font = love.graphics.getFont()
+		love.graphics.setColor(255,0,0,255)
+        love.graphics.print(t, screenWidth/2 - font:getWidth(t)/2, 10)
+        love.graphics.setColor(255,255,255,255)
+        love.graphics.setFont(sm)
+    end
 end
 
 function love.keypressed(key)
@@ -178,7 +189,6 @@ function newBeaver(y, name)
     local beaver = {}
     beaver.y = y
     beaver.x = 500
-    beaver.scale = 2
     beaver.scale = 2
     beaver.speed = 1
     beaver.name = name
@@ -265,4 +275,23 @@ end
 
 function sortBeavers(beaver1, beaver2)
     return beaver1.x > beaver2.x
+end
+
+function results()
+    love.graphics.setFont(md)
+    love.graphics.setColor(255,255,0,50)
+
+    love.graphics.print("Results:", 10,0)
+
+    local y = 20
+    local x = 10
+    for i in pairs(beavers) do 
+        love.graphics.print(i .. ": " .. beavers[i].name .. " ", x, y)
+        if i % 20 == 0 then
+            y = 20
+            x = x + 75
+        else
+            y = y + 25
+        end
+    end
 end
