@@ -72,9 +72,15 @@ function love.load()
     background.animations = {}
     background.animations.anim = anim8.newAnimation(background.grid('1-8',2),0.2)
 
+	finishline = {}
+    finishline.sprite = love.graphics.newImage('sprites/finishline.png')
+    finishline.x = -100
+
     time = {}
     time.start = 0
     time.stop = 0
+
+    finishline_position_set = false
 end
 
 function love.update(dt)
@@ -111,8 +117,13 @@ function love.update(dt)
             sorted = true
         end
         showResults = true
-        cam:lookAt(winner.x -200, screenHeight/2)
+        cam:lookAt(winner.x -200, screenHeight/2) 
         winner.animations.right:update(dt)
+
+        if not finishline_position_set then
+            finishline.x = screenWidth
+            finishline_position_set = true
+        end
     end
     background.animations.anim:update(dt)
 end
@@ -127,14 +138,6 @@ function love.draw()
         end
     end
 
-    cam:attach()
-    for i=1,#beavers do
-        local beaver = beavers[i]
-        beaver.animations.right:draw(beaver.spriteSheet, beaver.x, beaver.y, nil, beaver.scale, nil, 200, 32)
-        love.graphics.print(beaver.name, beaver.x-325, beaver.y+20)
-    end
-    cam:detach()
-
     -- Draw start menu on black background
     if showStartMenu then
         love.graphics.setColor(0,0,0,50)
@@ -148,6 +151,11 @@ function love.draw()
 
     -- When race is over
     if raceStart and love.timer.getTime() >= time.stop then
+
+        winner.x = winner.x + 0.2
+        love.graphics.draw(finishline.sprite, finishline.x, 0, nil, 4)
+        finishline.x = finishline.x - 0.5
+
         love.graphics.setColor(255,255,0,255)
         love.graphics.setFont(lg)
 
@@ -164,6 +172,14 @@ function love.draw()
         
         showResetButton = true
     end
+
+    cam:attach()
+    for i=1,#beavers do
+        local beaver = beavers[i]
+        beaver.animations.right:draw(beaver.spriteSheet, beaver.x, beaver.y, nil, beaver.scale, nil, 200, 32)
+        love.graphics.print(beaver.name, beaver.x-325, beaver.y+20)
+    end
+    cam:detach()
 
     -- Draw timer 
     if raceStart and love.timer.getTime() < time.stop then 
@@ -270,6 +286,8 @@ function resetButton()
         raceStart = false
         showStartMenu = true
         showResetButton = false
+        finishline_position_set = false
+        finishline.x = -100
     end
 end
 
@@ -280,7 +298,6 @@ end
 function results()
     love.graphics.setFont(md)
     love.graphics.setColor(255,255,0,50)
-
     love.graphics.print("Results:", 10,0)
 
     local y = 20
